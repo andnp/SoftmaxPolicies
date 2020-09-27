@@ -3,48 +3,50 @@ import sys
 import os
 sys.path.append(os.getcwd())
 
+import matplotlib.pyplot as plt
+
 from RlGlue import RlGlue
-from src.experiment import ExperimentModel
 
-from RlGlue.environment import BaseEnvironment
-from RlGlue.agent import BaseAgent
+from agents.QLearning import QLearning
+from agents.SoftmaxQ import SoftmaxQ
+from environments.CliffWorld import CliffWorld
 
-if len(sys.argv) < 3:
-    print('run again with:')
-    print('python3 src/main.py <path/to/description.json> <idx>')
-    exit(1)
+num_episodes = 50
+runs = 1000
 
-max_steps = 100
+def test_algorithm(agent):
+    all_rewards = []
+    for run in range(runs):
+        print(run)
+        # set random seeds accordingly
+        np.random.seed(run)
 
-exp = ExperimentModel.load()
-idx = int(sys.argv[2])
+        env = CliffWorld()
 
-# figure out which run number of these parameter settings this is
-run = exp.getRun(idx)
+        glue = RlGlue(agent, env)
+        agent.reset()
 
-# set random seeds accordingly
-np.random.seed(run)
+        # Run the experiment
+        rewards = []
+        for episode in range(num_episodes):
+            glue.runEpisode()
+            r = glue.total_reward
+            rewards.append(r)
+            
+            glue.total_reward = 0
 
-# TODO: replace with real agent class and environment class
-glue = RlGlue(BaseAgent, BaseEnvironment)
+        all_rewards.append(rewards)
 
-# Run the experiment
-rewards = []
-glue.start()
-for step in range(max_steps):
-    # call agent.step and environment.step
-    r, o, a, t = glue.step()
-    
-    # collect data throughout run
-    rewards.append(r)
-
-    # if terminal state, then restart the interface
-    if t:
-        glue.start()
+    return all_rewards
 
 
-# save results to disk
-save_context = exp.buildSaveContext(idx, base="results")
-save_context.ensureExists()
+q_agent = QLearning(states=40, actions=4)
+q_rewards = test_algorithm(q_agent)
 
-np.save(save_context.resolve('rewards.npy'), rewards)
+softmax_agent = SoftmaxQ(states=40, actions=4)
+softmax_rewards = test_algorithm(softmax_agent)
+
+plt.plot(np.mean(q_rewards, axis=0), label='Q-learning', color='blue')
+plt.plot(np.mean(softmax_rewards, axis=0), label='Softmax Q', color='red')
+plt.legend()
+plt.show()
