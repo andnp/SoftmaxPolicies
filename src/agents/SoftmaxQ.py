@@ -10,7 +10,8 @@ class SoftmaxQ(QLearning):
 
     def _policy(self, s):
         actions = self.Q[s]
-        exps = np.exp(actions) / self.tau
+        m = np.max(actions)
+        exps = np.exp(actions - m) / self.tau
         probs = exps / np.sum(exps)
 
         return random.sample(probs)
