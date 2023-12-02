@@ -12,19 +12,23 @@ class QLearning(BaseAgent):
         self.states = states
         self.actions = actions
         self.Q = np.zeros((states, actions))
-        
+
         self.s_t = None
         self.a_t = None
 
     def _policy(self, s):
-        if np.random.rand() < self.epsilon:
-            return np.random.randint(0, self.actions)
+        uniform = np.ones(self.actions) / self.actions
+        greedy = np.zeros(self.actions)
+        greedy[random.argmax(self.Q[s])] = 1
 
-        return random.argmax(self.Q[s])
+        return self.epsilon * uniform + (1 - self.epsilon) * greedy
+
+    def _selectAction(self, s):
+        return random.sample(self._policy(s))
 
     def start(self, s):
         self.s_t = s
-        self.a_t = self._policy(s)
+        self.a_t = self._selectAction(s)
         return self.a_t
 
     def step(self, r, s):
@@ -32,7 +36,7 @@ class QLearning(BaseAgent):
         self.Q[self.s_t, self.a_t] += self.alpha * delta
 
         self.s_t = s
-        self.a_t = self._policy(s)
+        self.a_t = self._selectAction(s)
 
         return self.a_t
 

@@ -33,7 +33,7 @@ class MellowMaxQ(QLearning):
         except:
             beta = 1
 
-        exps = np.exp(beta * actions)
+        exps = np.exp(beta * (actions - m))
         probs = exps / np.sum(exps)
 
-        return random.sample(probs)
+        return probs
